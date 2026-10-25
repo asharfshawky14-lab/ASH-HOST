@@ -210,7 +210,15 @@ def start_bot(file_id):
             )
 
             
+            
             processes[file_id] = process
+
+            thread = threading.Thread(
+                target=read_process_output,
+                args=(file_id, process),
+                daemon=True,
+            )
+            thread.start()
 
             time.sleep(0.5)
 
@@ -223,13 +231,6 @@ def start_bot(file_id):
                     "البوت توقف مباشرة بعد التشغيل. "
                     "راجع السجلات لمعرفة الخطأ."
                 )
-
-            thread = threading.Thread(
-                target=read_process_output,
-                args=(file_id, process),
-                daemon=True,
-            )
-            thread.start()
 
             return True, "بدأت عملية تشغيل البوت"
 
