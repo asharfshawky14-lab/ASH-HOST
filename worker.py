@@ -309,10 +309,19 @@ def api_restart_bot():
     if not file_id:
         return jsonify({"error": "file_id مطلوب"}), 400
 
-    stop_bot(file_id)
+    
+    stopped, stop_message = stop_bot(file_id)
+
+    if not stopped and process_status(file_id) == "running":
+        return jsonify({
+            "success": False,
+            "message": "تعذر إيقاف البوت لإعادة تشغيله: " + stop_message,
+        }), 400
+
     time.sleep(1)
 
     ok, message = start_bot(file_id)
+
 
     return jsonify({
         "success": ok,
