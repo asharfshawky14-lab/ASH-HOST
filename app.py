@@ -807,12 +807,20 @@ def start_bot():
         {"file_id": file_id},
     )
 
+    
     message = data.get("message") or data.get("error", "انتهى الطلب.")
+
+    if status != 200 or not data.get("success", False):
+        message = "فشل تشغيل البوت: " + message
+    else:
+        message = "تم تشغيل البوت بنجاح: " + message
+
     log_event("bot_start", f"{file_id}: {message}")
 
     return redirect(
         url_for("bots_page", message=message)
     )
+
 
 
 # ==========================================
