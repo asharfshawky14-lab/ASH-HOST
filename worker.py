@@ -183,9 +183,16 @@ def list_bots():
 
 def start_bot(file_id):
     with process_lock:
-        if process_status(file_id) == "running":
+        existing_process = processes.get(file_id)
+
+        if (
+            existing_process is not None
+            and existing_process.poll() is None
+        ):
             return False, "البوت يعمل بالفعل"
 
+        if existing_process is not None:
+            processes.pop(file_id, None)
         active = sum(
             1 for p in processes.values()
             if p.poll() is None
