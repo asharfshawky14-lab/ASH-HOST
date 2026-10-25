@@ -14,11 +14,11 @@ from werkzeug.exceptions import HTTPException
 
 app = Flask(__name__)
 
-WORKER_SECRET = os.environ.get("WORKER_SECRET", "")
+WORKER_SECRET = os.environ.get("WORKER_SECRET", "").strip()
 DATABASE_URL = (
     os.environ.get("DATABASE_URL")
     or os.environ.get("DATABASE-URL", "")
-)
+).strip()
 
 BOT_DIRECTORY = os.environ.get(
     "BOT_DIRECTORY",
@@ -40,10 +40,7 @@ def authorized():
     return bool(
         WORKER_SECRET
         and supplied
-        and hmac.compare_digest(
-            supplied,
-            WORKER_SECRET,
-        )
+        and hmac.compare_digest(supplied, WORKER_SECRET)
     )
 
 
@@ -107,10 +104,7 @@ def append_log(file_id, message):
                 maxlen=MAX_LOG_LINES
             )
 
-        process_logs[file_id].append(
-            str(message).rstrip()
-        )
-
+        process_logs[file_id].append(str(message).rstrip())
 
 
 def read_process_output(file_id, process):
@@ -120,10 +114,7 @@ def read_process_output(file_id, process):
                 append_log(file_id, line)
 
     except Exception as exc:
-        append_log(
-            file_id,
-            "Log reader error: " + str(exc),
-        )
+        append_log(file_id, "Log reader error: " + str(exc))
 
     finally:
         try:
@@ -134,8 +125,7 @@ def read_process_output(file_id, process):
         if return_code is not None:
             append_log(
                 file_id,
-                "Bot process exited with code "
-                + str(return_code),
+                "Bot process exited with code " + str(return_code),
             )
 
             with process_lock:
@@ -143,17 +133,17 @@ def read_process_output(file_id, process):
                     processes.pop(file_id, None)
 
 
-
 def process_status(file_id):
-    process = processes.get(file_id)
+    with process_lock:
+        process = processes.get(file_id)
 
-    if process is None:
+        if process is None:
+            return "stopped"
+
+        if process.poll() is None:
+            return "running"
+
         return "stopped"
-
-    if process.poll() is None:
-        return "running"
-
-    return "stopped"
 
 
 def list_bots():
@@ -193,36 +183,37 @@ def start_bot(file_id):
 
         if existing_process is not None:
             processes.pop(file_id, None)
+
         active = sum(
-            1 for p in processes.values()
-            if p.poll() is None
+            1
+            for process in processes.values()
+            if process.poll() is None
         )
 
         if active >= MAX_BOT_PROCESSES:
             return False, "تم الوصول للحد الأقصى للعمليات"
 
-        bot = read_bot_file(file_id)
-
-        if not bot:
-            return False, "الملف غير موجود"
-
-        filename = os.path.basename(bot["filename"])
-
-        if not filename.endswith(".py"):
-            return False, "يُسمح بملفات Python فقط"
-
-        path = os.path.join(
-            BOT_DIRECTORY,
-            str(file_id) + "_" + filename,
-        )
-
-        with open(path, "wb") as f:
-            f.write(bot["content"])
-
-        append_log(file_id, "Starting " + filename)
-
-        
         try:
+            bot = read_bot_file(file_id)
+
+            if not bot:
+                return False, "الملف غير موجود"
+
+            filename = os.path.basename(bot["filename"])
+
+            if not filename.lower().endswith(".py"):
+                return False, "يُسمح بملفات Python فقط"
+
+            path = os.path.join(
+                BOT_DIRECTORY,
+                str(file_id) + "_" + filename,
+            )
+
+            with open(path, "wb") as file:
+                file.write(bot["content"])
+
+            append_log(file_id, "Starting " + filename)
+
             syntax_check = subprocess.run(
                 [sys.executable, "-m", "py_compile", path],
                 capture_output=True,
@@ -253,9 +244,6 @@ def start_bot(file_id):
                 close_fds=True,
             )
 
-
-
-            
             processes[file_id] = process
 
             thread = threading.Thread(
@@ -279,11 +267,14 @@ def start_bot(file_id):
 
             return True, "بدأت عملية تشغيل البوت"
 
+        except subprocess.TimeoutExpired:
+            append_log(file_id, "Syntax check timed out")
+            return False, "انتهت مهلة فحص الملف"
+
         except Exception:
             app.logger.exception("Failed to start bot")
             append_log(file_id, "Failed to start bot")
             return False, "فشل تشغيل البوت"
-
 
 
 def stop_bot(file_id):
@@ -293,9 +284,8 @@ def stop_bot(file_id):
     if process is None or process.poll() is not None:
         return False, "البوت متوقف بالفعل"
 
-        try:
-        if process.poll() is None:
-            process.terminate()
+    try:
+        process.terminate()
 
         try:
             process.wait(timeout=8)
@@ -316,9 +306,8 @@ def stop_bot(file_id):
 
     except Exception:
         app.logger.exception("Failed to stop bot")
+        append_log(file_id, "Failed to stop bot")
         return False, "فشل إيقاف البوت"
-
-
 
 
 @app.get("/health")
@@ -380,19 +369,20 @@ def api_restart_bot():
     if not file_id:
         return jsonify({"error": "file_id مطلوب"}), 400
 
-    
     stopped, stop_message = stop_bot(file_id)
 
     if not stopped and process_status(file_id) == "running":
         return jsonify({
             "success": False,
-            "message": "تعذر إيقاف البوت لإعادة تشغيله: " + stop_message,
+            "message": (
+                "تعذر إيقاف البوت لإعادة تشغيله: "
+                + stop_message
+            ),
         }), 400
 
     time.sleep(1)
 
     ok, message = start_bot(file_id)
-
 
     return jsonify({
         "success": ok,
@@ -421,8 +411,9 @@ def api_resources():
 
         with process_lock:
             running = sum(
-                1 for p in processes.values()
-                if p.poll() is None
+                1
+                for process in processes.values()
+                if process.poll() is None
             )
 
         return jsonify({
