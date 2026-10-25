@@ -209,7 +209,20 @@ def start_bot(file_id):
                 close_fds=True,
             )
 
+            
             processes[file_id] = process
+
+            time.sleep(0.5)
+
+            if process.poll() is not None:
+                append_log(
+                    file_id,
+                    "Bot exited immediately after startup",
+                )
+                return False, (
+                    "البوت توقف مباشرة بعد التشغيل. "
+                    "راجع السجلات لمعرفة الخطأ."
+                )
 
             thread = threading.Thread(
                 target=read_process_output,
@@ -218,7 +231,7 @@ def start_bot(file_id):
             )
             thread.start()
 
-            return True, "تم إرسال أمر التشغيل"
+            return True, "بدأت عملية تشغيل البوت"
 
         except Exception:
             app.logger.exception("Failed to start bot")
