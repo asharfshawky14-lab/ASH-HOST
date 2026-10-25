@@ -225,6 +225,29 @@ def start_bot(file_id):
                 bufsize=1,
                 close_fds=True,
             )
+            
+        try:
+            syntax_check = subprocess.run(
+                [sys.executable, "-m", "py_compile", path],
+                capture_output=True,
+                text=True,
+                timeout=10,
+            )
+
+            if syntax_check.returncode != 0:
+                error_text = (
+                    syntax_check.stderr
+                    or syntax_check.stdout
+                    or "Syntax check failed"
+                )
+                append_log(file_id, error_text)
+                return False, (
+                    "ملف البوت فيه خطأ في صياغة Python. "
+                    "راجع السجلات لمعرفة التفاصيل."
+                )
+
+            process = subprocess.Popen(
+
 
             
             
