@@ -871,7 +871,14 @@ def restart_bot():
         {"file_id": file_id},
     )
 
+    
     message = data.get("message") or data.get("error", "انتهى الطلب.")
+
+    if status != 200 or not data.get("success", False):
+        message = "فشل إعادة تشغيل البوت: " + message
+    else:
+        message = "تمت إعادة تشغيل البوت بنجاح: " + message
+
     log_event("bot_restart", f"{file_id}: {message}")
 
     return redirect(url_for("bots_page", message=message))
