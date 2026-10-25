@@ -764,7 +764,7 @@ def get_saved_files():
                 cur.execute("""
                     SELECT id, filename, size_bytes
                     FROM ash_host_files
-                    ORDER BY updated_at DESC
+                    ORDER BY created_at DESC
                 """)
                 return cur.fetchall()
     except Exception:
