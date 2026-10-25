@@ -112,19 +112,36 @@ def append_log(file_id, message):
         )
 
 
+
 def read_process_output(file_id, process):
     try:
-        if process.stdout is None:
-            return
-
-        for line in iter(process.stdout.readline, ""):
-            append_log(file_id, line)
+        if process.stdout is not None:
+            for line in iter(process.stdout.readline, ""):
+                append_log(file_id, line)
 
     except Exception as exc:
         append_log(
             file_id,
             "Log reader error: " + str(exc),
         )
+
+    finally:
+        try:
+            return_code = process.wait(timeout=3)
+        except subprocess.TimeoutExpired:
+            return_code = process.poll()
+
+        if return_code is not None:
+            append_log(
+                file_id,
+                "Bot process exited with code "
+                + str(return_code),
+            )
+
+            with process_lock:
+                if processes.get(file_id) is process:
+                    processes.pop(file_id, None)
+
 
 
 def process_status(file_id):
