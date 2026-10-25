@@ -96,7 +96,7 @@ def init_db():
     with get_db() as conn:
         with conn.cursor() as cur:
 
-                        cur.execute("""
+            cur.execute("""
                 CREATE TABLE IF NOT EXISTS ash_host_files (
                     id TEXT PRIMARY KEY,
                     filename TEXT NOT NULL,
