@@ -120,6 +120,39 @@ def init_db():
             """)
 
         conn.commit()
+        
+# ==========================================
+# تهيئة قاعدة البيانات عند أول طلب
+# ==========================================
+
+_db_initialized = False
+_db_init_lock = __import__("threading").Lock()
+
+
+@app.before_request
+def ensure_database_initialized():
+    global _db_initialized
+
+    if _db_initialized:
+        return None
+
+    with _db_init_lock:
+        if _db_initialized:
+            return None
+
+        try:
+            init_db()
+            _db_initialized = True
+            logger.info("Database tables initialized successfully")
+        except Exception:
+            logger.exception("Database initialization failed")
+            return jsonify({
+                "error": "قاعدة البيانات غير جاهزة. راجع إعدادات الاتصال وسجلات الاستضافة."
+            }), 503
+
+    return None
+
+
 
 
 # ==========================================
