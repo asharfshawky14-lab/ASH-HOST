@@ -96,7 +96,7 @@ def init_db():
     with get_db() as conn:
         with conn.cursor() as cur:
 
-            cur.execute("""
+                        cur.execute("""
                 CREATE TABLE IF NOT EXISTS ash_host_files (
                     id TEXT PRIMARY KEY,
                     filename TEXT NOT NULL,
@@ -107,6 +107,18 @@ def init_db():
                     updated_at TIMESTAMPTZ
                         NOT NULL DEFAULT CURRENT_TIMESTAMP
                 )
+            """)
+
+            cur.execute("""
+                ALTER TABLE ash_host_files
+                ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ
+                NOT NULL DEFAULT CURRENT_TIMESTAMP
+            """)
+
+            cur.execute("""
+                UPDATE ash_host_files
+                SET updated_at = created_at
+                WHERE updated_at IS NULL
             """)
 
             cur.execute("""
