@@ -221,32 +221,6 @@ def health():
     }), status_code
 
 
-# ==========================================
-# الصفحة الرئيسية المؤقتة
-# سيتم استبدالها بالواجهة الكاملة في الأجزاء التالية
-# ==========================================
-
-@app.route("/")
-def index():
-    if not session.get("admin_logged_in"):
-        return redirect(url_for("login"))
-
-    return """
-    <html lang="ar" dir="rtl">
-    <head>
-        <meta charset="UTF-8">
-        <meta name="viewport"
-              content="width=device-width, initial-scale=1">
-        <title>ASH-HOST</title>
-    </head>
-    <body style="background:#10101a;color:white;
-                 font-family:Arial;padding:24px">
-        <h1>ASH-HOST</h1>
-        <p>تم تحميل أساس التطبيق بنجاح.</p>
-        <p>سنضيف لوحة التحكم الكاملة في الأجزاء التالية.</p>
-    </body>
-    </html>
-    """
 
 
 # لا تشغّل خادم التطوير مباشرة عند الاستيراد بواسطة Gunicorn.
