@@ -240,28 +240,37 @@ def start_bot(file_id):
             return False, "فشل تشغيل البوت"
 
 
+
 def stop_bot(file_id):
     with process_lock:
         process = processes.get(file_id)
 
-        if process is None or process.poll() is not None:
-            return False, "البوت متوقف بالفعل"
+    if process is None or process.poll() is not None:
+        return False, "البوت متوقف بالفعل"
 
-        try:
+    try:
+        if process.poll() is None:
             process.terminate()
 
-            try:
-                process.wait(timeout=8)
-            except subprocess.TimeoutExpired:
-                process.kill()
-                process.wait(timeout=3)
+        try:
+            process.wait(timeout=8)
+        except subprocess.TimeoutExpired:
+            process.kill()
+            process.wait(timeout=3)
 
-            append_log(file_id, "Bot stopped")
-            return True, "تم إيقاف البوت"
+        append_log(file_id, "Bot stopped")
 
-        except Exception:
-            app.logger.exception("Failed to stop bot")
-            return False, "فشل إيقاف البوت"
+        with process_lock:
+            if processes.get(file_id) is process:
+                processes.pop(file_id, None)
+
+        return True, "تم إيقاف البوت"
+
+    except Exception:
+        app.logger.exception("Failed to stop bot")
+        return False, "فشل إيقاف البوت"
+
+
 
 
 @app.get("/health")
