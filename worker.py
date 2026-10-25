@@ -293,7 +293,7 @@ def stop_bot(file_id):
     if process is None or process.poll() is not None:
         return False, "البوت متوقف بالفعل"
 
-    try:
+        try:
         if process.poll() is None:
             process.terminate()
 
@@ -302,6 +302,9 @@ def stop_bot(file_id):
         except subprocess.TimeoutExpired:
             process.kill()
             process.wait(timeout=3)
+
+        if process.poll() is None:
+            return False, "تعذر إيقاف عملية البوت"
 
         append_log(file_id, "Bot stopped")
 
