@@ -248,10 +248,6 @@ def start_bot(file_id):
 
 
 
-            process = subprocess.Popen(
-
-
-            
             
             processes[file_id] = process
 
