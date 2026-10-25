@@ -214,18 +214,7 @@ def start_bot(file_id):
 
         append_log(file_id, "Starting " + filename)
 
-        try:
-            process = subprocess.Popen(
-                [sys.executable, "-u", path],
-                cwd=BOT_DIRECTORY,
-                stdin=subprocess.DEVNULL,
-                stdout=subprocess.PIPE,
-                stderr=subprocess.STDOUT,
-                text=True,
-                bufsize=1,
-                close_fds=True,
-            )
-            
+        
         try:
             syntax_check = subprocess.run(
                 [sys.executable, "-m", "py_compile", path],
@@ -245,6 +234,19 @@ def start_bot(file_id):
                     "ملف البوت فيه خطأ في صياغة Python. "
                     "راجع السجلات لمعرفة التفاصيل."
                 )
+
+            process = subprocess.Popen(
+                [sys.executable, "-u", path],
+                cwd=BOT_DIRECTORY,
+                stdin=subprocess.DEVNULL,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.STDOUT,
+                text=True,
+                bufsize=1,
+                close_fds=True,
+            )
+
+
 
             process = subprocess.Popen(
 
